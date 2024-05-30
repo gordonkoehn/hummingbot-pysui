@@ -64,36 +64,3 @@ class SUIdexConfigMap(BaseConnectorConfigMap):
 
 
 KEYS = SUIdexConfigMap.construct()
-
-OTHER_DOMAINS = ["suidex_us"]
-OTHER_DOMAINS_PARAMETER = {"suidex_us": "us"}
-OTHER_DOMAINS_EXAMPLE_PAIR = {"suidex_us": "BTC-USDT"}
-OTHER_DOMAINS_DEFAULT_FEES = {"suidex_us": DEFAULT_FEES}
-
-
-class SUIdexUSConfigMap(BaseConnectorConfigMap):
-    connector: str = Field(default="suidex_us", const=True, client_data=None)
-    suidex_api_key: SecretStr = Field(
-        default=...,
-        client_data=ClientFieldData(
-            prompt=lambda cm: "Enter your SUIdex US API key",
-            is_secure=True,
-            is_connect_key=True,
-            prompt_on_new=True,
-        )
-    )
-    suidex_api_secret: SecretStr = Field(
-        default=...,
-        client_data=ClientFieldData(
-            prompt=lambda cm: "Enter your SUIdex US API secret",
-            is_secure=True,
-            is_connect_key=True,
-            prompt_on_new=True,
-        )
-    )
-
-    class Config:
-        title = "suidex_us"
-
-
-OTHER_DOMAINS_KEYS = {"suidex_us": SUIdexUSConfigMap.construct()}
