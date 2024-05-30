@@ -1,5 +1,5 @@
 #!/bin/bash
-
+set -x
 cd $(dirname $0)
 
 # Compatibility logic for older Anaconda versions.
@@ -37,7 +37,7 @@ pip install objgraph
 pre-commit install
 
 # Check for build-essential (only relevant for Debian-based systems)
-if [ "$(uname)" = "Linux" ]; then
+if [ "$(uname)" = "Linux" ] && which dpkg > /dev/null 2>&1 ; then
     if ! dpkg -s build-essential &> /dev/null; then
         echo "build-essential not found, installing..."
         sudo apt-get update && sudo apt-get upgrade -y
