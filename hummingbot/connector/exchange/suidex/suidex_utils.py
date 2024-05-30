@@ -40,23 +40,14 @@ def is_exchange_information_valid(exchange_info: Dict[str, Any]) -> bool:
 
 class SUIdexConfigMap(BaseConnectorConfigMap):
     connector: str = Field(default="suidex", const=True, client_data=None)
-    suidex_api_key: SecretStr = Field(
+    sui_wallet_private_key_secret: SecretStr = Field(
         default=...,
         client_data=ClientFieldData(
-            prompt=lambda cm: "Enter your SUIdex API key",
+            prompt=lambda cm: "Enter your SUI wallet private key",
             is_secure=True,
             is_connect_key=True,
             prompt_on_new=True,
-        )
-    )
-    suidex_api_secret: SecretStr = Field(
-        default=...,
-        client_data=ClientFieldData(
-            prompt=lambda cm: "Enter your SUIdex API secret",
-            is_secure=True,
-            is_connect_key=True,
-            prompt_on_new=True,
-        )
+        ),
     )
 
     class Config:
