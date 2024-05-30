@@ -28,3 +28,5 @@ combine_as_imports = true
 conda_env = "hummingbot"
 filter_files = true
 skip = ["setup.py"]
+known_first_party = ["hummingbot", "test.hummingbot"]
+extra_standard_library = ['pandas', 'numpy', 'dateutil', 'pytz', 'psycopg2', 'sqlalchemy', 'requests', 'websockets', 'matplotlib', 'pyarrow']
