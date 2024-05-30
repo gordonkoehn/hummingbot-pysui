@@ -2,6 +2,7 @@ import asyncio
 import json
 import re
 import unittest
+
 from typing import Awaitable
 from unittest.mock import AsyncMock, MagicMock, patch
 
@@ -17,14 +18,18 @@ from hummingbot.connector.test_support.network_mocking_assistant import NetworkM
 from hummingbot.core.data_type.order_book import OrderBook
 from hummingbot.core.data_type.order_book_message import OrderBookMessage
 
+from test.hummingbot.connector.exchange.suidex import DexTestCase
 
-class SUIdexAPIOrderBookDataSourceUnitTests(unittest.TestCase):
-    # logging.Level required to receive logs from the data source logger
+
+class SUIdexAPIOrderBookDataSourceUnitTests(DexTestCase):
     level = 0
 
     @classmethod
     def setUpClass(cls) -> None:
         super().setUpClass()
+        base_asset = "COINALPHA_FIXME"
+        quote_asset = "USD_FIXME"
+        cls.setUpPairs(base_asset, quote_asset)
         cls.ev_loop = asyncio.get_event_loop()
         cls.base_asset = "COINALPHA"
         cls.quote_asset = "HBOT"
