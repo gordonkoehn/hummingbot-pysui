@@ -18,11 +18,14 @@ _for manual testing purposes_
    ```bash
    lsui keytool export --key-identity sb-1-ed25519
    ```
-   and paste this into your local .env file that is imported in sui_client_config.py
+   and paste this into your local .env file that is imported in `sui_client_config.py`; like:
+   ```bash
+   echo "LOCALNET_ADDR1_PRVKEY=$(lsui keytool export --key-identity sb-1-ed25519 --json | grep suipriv | cut '-d"' -f 4)" >> .env.localnet
+   ```
 6. Deploy Contract
    ```bash
    # in the dir of move.toml
     localnet publish --skip-dependency-verification
-   ``` 
+   ```
 8. Add pysui to your project and make `devInspect` calls or `executeTransaction` calls
 
