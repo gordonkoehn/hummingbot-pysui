@@ -3,16 +3,23 @@ import unittest
 from hummingbot.connector.exchange.suidex import suidex_utils as utils
 
 
-class SUIdexUtilTestCases(unittest.TestCase):
-
+class DexTestCase(unittest.TestCase):
     @classmethod
-    def setUpClass(cls) -> None:
-        super().setUpClass()
-        cls.base_asset = "COINALPHA"
-        cls.quote_asset = "HBOT"
+    def setUpPairs(cls, base_asset: str, quote_asset: str) -> None:
+        cls.base_asset = base_asset
+        cls.quote_asset = quote_asset
         cls.trading_pair = f"{cls.base_asset}-{cls.quote_asset}"
         cls.hb_trading_pair = f"{cls.base_asset}-{cls.quote_asset}"
         cls.ex_trading_pair = f"{cls.base_asset}{cls.quote_asset}"
+
+
+class SUIDexUtilTestCases(DexTestCase):
+    @classmethod
+    def setUpClass(cls) -> None:
+        super().setUpClass()
+        base_asset = "COINALPHA_FIXME"
+        quote_asset = "USD_FIXME"
+        return cls.setUpPairs(base_asset, quote_asset)
 
     def test_is_exchange_information_valid(self):
         invalid_info_1 = {
