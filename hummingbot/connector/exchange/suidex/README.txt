@@ -11,3 +11,7 @@
     ```
 - [x] commit code to run an example suidex test `py.test test/hummingbot/connector/exchange/suidex/test_suidex_utils.py`
 - [ ] convert suidex to be more like polkadex
+- [ ] meeting of minds over suidex <-> libsui interface
+  - asks()
+  - bids()
+  - open_orders()
