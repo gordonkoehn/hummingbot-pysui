@@ -733,6 +733,15 @@ class SuidexExchangeTests(AbstractExchangeConnectorTests.ExchangeConnectorTests)
         return {"websocket_streams": {"data": json.dumps(data)}}
 
     @aioresponses()
+    def test_chain_connector(self, mock_api):
+        chain = self.exchange._data_source._chain_executor
+        if chain.account_cap is None:
+            chain.account_cap = chain.create_account()
+        chain.place_limit_order(price=1.618033, quantity=1337)
+        chain.get_level2_book_status_bid_side()
+        chain.get_level2_book_status_ask_side()
+
+    @aioresponses()
     def test_check_network_success(self, mock_api):
         all_assets_mock_response = self.all_assets_mock_response
         self.exchange._data_source._query_executor._all_assets_responses.put_nowait(all_assets_mock_response)
@@ -1694,19 +1703,3 @@ class SuidexExchangeTests(AbstractExchangeConnectorTests.ExchangeConnectorTests)
         digits = len(str(order_number))
         prefix = template_exchange_id[:-digits]
         return f"{prefix}{order_number}"
-
-
-def test_connector():
-    from hummingbot.connector.exchange.suidex.libsui import DeepbookConnector
-    from hummingbot.connector.exchange.suidex.libsui._interface import cfg, client
-
-    connector = DeepbookConnector(client, cfg)
-    account_cap = connector.create_account()  #
-    # print(connector.package_id)
-    # print(connector.pool_object_id)
-    # connector.deposit_base()
-    connector.place_limit_order(account_cap=account_cap)
-    # connector.place_limit_order()
-    # connector.place_limit_order()
-    connector.get_level2_book_status_bid_side()
-    connector.get_level2_book_status_ask_side()
