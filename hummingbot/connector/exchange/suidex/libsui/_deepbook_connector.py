@@ -26,7 +26,7 @@ load_dotenv()
 ########################
 # Paramaters to be set
 # account cap / account cap (= key to account) of the user
-account_cap = "0x9d4c904c0e51d9e09cbba1f24626060e9eee6460d4430b3539d43a2578c9ff07"  # noqa: mock
+ACCOUNT_CAP = "0x9d4c904c0e51d9e09cbba1f24626060e9eee6460d4430b3539d43a2578c9ff07"  # noqa: mock
 
 ##
 amount_to_deposit = 10**9 * 10  # 10 SUI
@@ -77,11 +77,13 @@ class DeepbookConnector:
         )
         tx_result = handle_result(txn.execute(gas_budget="10000000"))
         account_cap = json.loads(tx_result.to_json(indent=4)).get("effects").get("created")[0]["reference"]["objectId"]
-        self.logger().info("created accaount cap: ", account_cap)
+        self.logger().info(f"created account cap: {account_cap}")
         return account_cap
 
-    def deposit_base(self, account_cap=account_cap):  # noqa: mock
+    def deposit_base(self, account_cap=None):  # noqa: mock
         # TODO: add case for sponsoredTransaction
+        account_cap = ACCOUNT_CAP if account_cap is None else account_cap
+
         txn = SyncTransaction(client=client)
 
         # deposit 30 SUI
@@ -108,10 +110,12 @@ class DeepbookConnector:
         price=price,
         quantity=quantity,
         is_bid=is_bid,
-        account_cap=account_cap,
+        account_cap=None,
     ):  # noqa: mock
         # TODO: add case for sponsoredTransaction
         txn = SyncTransaction(client=client)
+
+        account_cap = ACCOUNT_CAP if account_cap is None else account_cap
 
         # defining range for mock order id
         # Define the lower and upper bounds for the random u64 integers (inclusive)
