@@ -1,4 +1,5 @@
 # The underlying configuration class
+import collections.abc
 import logging
 import os
 
@@ -57,7 +58,22 @@ user_config = {
 if not any(user_config["prv_keys"]):
     raise RuntimeError(f"can't find {prvkey_key} in .env ")
 
-logger().debug(f"user_config: {user_config!r}")
+
+def _user_config_cleaned(v):
+    _truncpriv = lambda s: s[:15] + "...redacted" if s.startswith("suiprivk") else s
+    if isinstance(v, collections.abc.Sequence):
+        if isinstance(v, str):
+            return _truncpriv(v)
+        elif isinstance(v, list):
+            return [_truncpriv(el) for el in v]
+        elif isinstance(v, tuple):
+            return tuple(_truncpriv(el) for el in v)
+        else:
+            return (_truncpriv(el) for el in v)
+
+
+user_config_clean = {k: _user_config_cleaned(v) for (k, v) in sorted(user_config.items())}
+logger().debug(f"user_config: {user_config_clean!r}")
 
 cfg = SuiConfig.user_config(**user_config)
 logger().info(f"CONFIGURATION: {cfg.rpc_url}")
