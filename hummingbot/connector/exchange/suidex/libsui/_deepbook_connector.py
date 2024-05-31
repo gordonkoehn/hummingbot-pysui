@@ -15,7 +15,7 @@ from pysui.sui.sui_txn import SyncTransaction
 # from pysui.sui.sui_types.address import SuiAddress
 from pysui.sui.sui_types.scalars import ObjectID, SuiBoolean, SuiU8, SuiU64
 
-from hummingbot.connector.exchange.suidex.libsui._sui_client_config import cfg, client
+from hummingbot.connector.exchange.suidex.libsui._interface import cfg, client
 
 load_dotenv()
 
