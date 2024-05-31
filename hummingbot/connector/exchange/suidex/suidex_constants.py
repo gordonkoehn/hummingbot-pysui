@@ -8,6 +8,10 @@ EXCHANGE_NAME = "suidex"
 
 NETS = ["localnet", "testnet", "mainnet"]
 DEFAULT_NET = NETS[0]
+CLI_TOOL_NET_PREFIX = {"localnet": "l", "testnet": "t", "mainnet": ""}
+CLI_TOOL = {net: CLI_TOOL_NET_PREFIX[net] + "sui" for net in CLI_TOOL_NET_PREFIX}
+
+KEY_SCHEME_FLAG = {"localnet": "sb-4-secp256k1", "testnet": "sb-4-secp256k1", "mainnet": None}
 
 MAX_ID_LEN = 32
 CLIENT_ID_PREFIX = "HBOT"
