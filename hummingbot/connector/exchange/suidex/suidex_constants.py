@@ -1,114 +1,168 @@
-from hummingbot.core.api_throttler.data_types import LinkedLimitWeightPair, RateLimit
+import sys
+
+from hummingbot.connector.constants import SECOND
+from hummingbot.core.api_throttler.data_types import RateLimit
 from hummingbot.core.data_type.in_flight_order import OrderState
 
-DEFAULT_DOMAIN = "com"
+EXCHANGE_NAME = "suidex"
 
-HBOT_ORDER_ID_PREFIX = "x-XEKWYICX"
-MAX_ORDER_ID_LEN = 32
+NETS = ["localnet", "testnet", "mainnet"]
+DEFAULT_NET = NETS[0]
 
-# Base URL
-REST_URL = "https://api.suidex.{}/api/"
-WSS_URL = "wss://stream.suidex.{}:9443/ws"
+MAX_ID_LEN = 32
+CLIENT_ID_PREFIX = "HBOT"
 
-PUBLIC_API_VERSION = "v3"
-PRIVATE_API_VERSION = "v3"
+DEFAULT_DOMAIN = DEFAULT_NET
 
-# Public API endpoints or SUIdexClient function
-TICKER_PRICE_CHANGE_PATH_URL = "/ticker/24hr"
-TICKER_BOOK_PATH_URL = "/ticker/bookTicker"
-EXCHANGE_INFO_PATH_URL = "/exchangeInfo"
-PING_PATH_URL = "/ping"
-SNAPSHOT_PATH_URL = "/depth"
-SERVER_TIME_PATH_URL = "/time"
+# See https://docs.sui.io/concepts/graphql-rpc
+GRAPHQL_ENDPOINTS = {net: f"https://sui-{net}.mystenlabs.com/graphql" for net in NETS}
 
-# Private API endpoints or SUIdexClient function
-ACCOUNTS_PATH_URL = "/account"
-MY_TRADES_PATH_URL = "/myTrades"
-ORDER_PATH_URL = "/order"
-SUIDEX_USER_STREAM_PATH_URL = "/userDataStream"
+# TODO: suiexplorer wss (https://github.com/mystenlabs/sui/issues/13700)
+# Try:
+#   - https://blockeden.xyz/blog/2022/12/27/supporting-sui-ws/
+#   - https://forums.sui.io/t/guide-list-custom-rpc-url-sui-wallet/30990
+# BLOCKCHAIN_URLS = {net: f"wss://rpc-{net}.suiscan.xyz/" for net in NETS}
 
-WS_HEARTBEAT_TIME_INTERVAL = 30
+SUIDEX_SS58_PREFIX = 88
 
-# SUIdex params
+ORDERBOOK_UPDATES_STREAM_NAME = "ob-inc"
+RECENT_TRADES_STREAM_NAME = "recent-trades"
 
-SIDE_BUY = "BUY"
-SIDE_SELL = "SELL"
+# Rate limit IDs
+ORDERBOOK_LIMIT_ID = "Orderbook"
+ALL_ASSETS_LIMIT_ID = "AllAssets"
+ALL_MARKETS_LIMIT_ID = "AllMarkets"
+FIND_USER_LIMIT_ID = "FindUser"
+PUBLIC_TRADES_LIMIT_ID = "RecentTrades"
+ALL_BALANCES_LIMIT_ID = "AllBalances"
+ALL_FILLS_LIMIT_ID = "AllFills"
+PLACE_ORDER_LIMIT_ID = "PlaceOrder"
+CANCEL_ORDER_LIMIT_ID = "CancelOrder"
+BATCH_ORDER_UPDATES_LIMIT_ID = "BatchOrderUpdates"
+ORDER_UPDATE_LIMIT_ID = "OrderUpdate"
+LIST_OPEN_ORDERS_LIMIT_ID = "ListOpenOrders"
 
-TIME_IN_FORCE_GTC = "GTC"  # Good till cancelled
-TIME_IN_FORCE_IOC = "IOC"  # Immediate or cancel
-TIME_IN_FORCE_FOK = "FOK"  # Fill or kill
-
-# Rate Limit Type
-REQUEST_WEIGHT = "REQUEST_WEIGHT"
-ORDERS = "ORDERS"
-ORDERS_24HR = "ORDERS_24HR"
-RAW_REQUESTS = "RAW_REQUESTS"
-
-# Rate Limit time intervals
-ONE_MINUTE = 60
-ONE_SECOND = 1
-ONE_DAY = 86400
-
-MAX_REQUEST = 5000
-
-# Order States
-ORDER_STATE = {
-    "PENDING": OrderState.PENDING_CREATE,
-    "NEW": OrderState.OPEN,
-    "FILLED": OrderState.FILLED,
-    "PARTIALLY_FILLED": OrderState.PARTIALLY_FILLED,
-    "PENDING_CANCEL": OrderState.OPEN,
-    "CANCELED": OrderState.CANCELED,
-    "REJECTED": OrderState.FAILED,
-    "EXPIRED": OrderState.FAILED,
-}
-
-# Websocket event types
-DIFF_EVENT_TYPE = "depthUpdate"
-TRADE_EVENT_TYPE = "trade"
+NO_LIMIT = sys.maxsize
 
 RATE_LIMITS = [
-    # Pools
-    RateLimit(limit_id=REQUEST_WEIGHT, limit=6000, time_interval=ONE_MINUTE),
-    RateLimit(limit_id=ORDERS, limit=50, time_interval=10 * ONE_SECOND),
-    RateLimit(limit_id=ORDERS_24HR, limit=160000, time_interval=ONE_DAY),
-    RateLimit(limit_id=RAW_REQUESTS, limit=61000, time_interval= 5 * ONE_MINUTE),
-    # Weighted Limits
-    RateLimit(limit_id=TICKER_PRICE_CHANGE_PATH_URL, limit=MAX_REQUEST, time_interval=ONE_MINUTE,
-              linked_limits=[LinkedLimitWeightPair(REQUEST_WEIGHT, 2),
-                             LinkedLimitWeightPair(RAW_REQUESTS, 1)]),
-    RateLimit(limit_id=TICKER_BOOK_PATH_URL, limit=MAX_REQUEST, time_interval=ONE_MINUTE,
-              linked_limits=[LinkedLimitWeightPair(REQUEST_WEIGHT, 4),
-                             LinkedLimitWeightPair(RAW_REQUESTS, 1)]),
-    RateLimit(limit_id=EXCHANGE_INFO_PATH_URL, limit=MAX_REQUEST, time_interval=ONE_MINUTE,
-              linked_limits=[LinkedLimitWeightPair(REQUEST_WEIGHT, 20),
-                             LinkedLimitWeightPair(RAW_REQUESTS, 1)]),
-    RateLimit(limit_id=SNAPSHOT_PATH_URL, limit=MAX_REQUEST, time_interval=ONE_MINUTE,
-              linked_limits=[LinkedLimitWeightPair(REQUEST_WEIGHT, 100),
-                             LinkedLimitWeightPair(RAW_REQUESTS, 1)]),
-    RateLimit(limit_id=SUIDEX_USER_STREAM_PATH_URL, limit=MAX_REQUEST, time_interval=ONE_MINUTE,
-              linked_limits=[LinkedLimitWeightPair(REQUEST_WEIGHT, 2),
-                             LinkedLimitWeightPair(RAW_REQUESTS, 1)]),
-    RateLimit(limit_id=SERVER_TIME_PATH_URL, limit=MAX_REQUEST, time_interval=ONE_MINUTE,
-              linked_limits=[LinkedLimitWeightPair(REQUEST_WEIGHT, 1),
-                             LinkedLimitWeightPair(RAW_REQUESTS, 1)]),
-    RateLimit(limit_id=PING_PATH_URL, limit=MAX_REQUEST, time_interval=ONE_MINUTE,
-              linked_limits=[LinkedLimitWeightPair(REQUEST_WEIGHT, 1),
-                             LinkedLimitWeightPair(RAW_REQUESTS, 1)]),
-    RateLimit(limit_id=ACCOUNTS_PATH_URL, limit=MAX_REQUEST, time_interval=ONE_MINUTE,
-              linked_limits=[LinkedLimitWeightPair(REQUEST_WEIGHT, 20),
-                             LinkedLimitWeightPair(RAW_REQUESTS, 1)]),
-    RateLimit(limit_id=MY_TRADES_PATH_URL, limit=MAX_REQUEST, time_interval=ONE_MINUTE,
-              linked_limits=[LinkedLimitWeightPair(REQUEST_WEIGHT, 20),
-                             LinkedLimitWeightPair(RAW_REQUESTS, 1)]),
-    RateLimit(limit_id=ORDER_PATH_URL, limit=MAX_REQUEST, time_interval=ONE_MINUTE,
-              linked_limits=[LinkedLimitWeightPair(REQUEST_WEIGHT, 4),
-                             LinkedLimitWeightPair(ORDERS, 1),
-                             LinkedLimitWeightPair(ORDERS_24HR, 1),
-                             LinkedLimitWeightPair(RAW_REQUESTS, 1)])
+    RateLimit(
+        limit_id=ALL_ASSETS_LIMIT_ID,
+        limit=NO_LIMIT,
+        time_interval=SECOND,
+    ),
+    RateLimit(
+        limit_id=ALL_MARKETS_LIMIT_ID,
+        limit=NO_LIMIT,
+        time_interval=SECOND,
+    ),
+    RateLimit(
+        limit_id=ORDERBOOK_LIMIT_ID,
+        limit=NO_LIMIT,
+        time_interval=SECOND,
+    ),
+    RateLimit(
+        limit_id=FIND_USER_LIMIT_ID,
+        limit=NO_LIMIT,
+        time_interval=SECOND,
+    ),
+    RateLimit(
+        limit_id=PUBLIC_TRADES_LIMIT_ID,
+        limit=NO_LIMIT,
+        time_interval=SECOND,
+    ),
+    RateLimit(
+        limit_id=ALL_BALANCES_LIMIT_ID,
+        limit=NO_LIMIT,
+        time_interval=SECOND,
+    ),
+    RateLimit(
+        limit_id=ALL_FILLS_LIMIT_ID,
+        limit=NO_LIMIT,
+        time_interval=SECOND,
+    ),
+    RateLimit(
+        limit_id=PLACE_ORDER_LIMIT_ID,
+        limit=NO_LIMIT,
+        time_interval=SECOND,
+    ),
+    RateLimit(
+        limit_id=CANCEL_ORDER_LIMIT_ID,
+        limit=NO_LIMIT,
+        time_interval=SECOND,
+    ),
+    RateLimit(
+        limit_id=BATCH_ORDER_UPDATES_LIMIT_ID,
+        limit=NO_LIMIT,
+        time_interval=SECOND,
+    ),
+    RateLimit(
+        limit_id=ORDER_UPDATE_LIMIT_ID,
+        limit=NO_LIMIT,
+        time_interval=SECOND,
+    ),
+    RateLimit(
+        limit_id=LIST_OPEN_ORDERS_LIMIT_ID,
+        limit=NO_LIMIT,
+        time_interval=SECOND,
+    ),
 ]
 
-ORDER_NOT_EXIST_ERROR_CODE = -2013
-ORDER_NOT_EXIST_MESSAGE = "Order does not exist"
-UNKNOWN_ORDER_ERROR_CODE = -2011
-UNKNOWN_ORDER_MESSAGE = "Unknown order sent"
+
+ORDER_STATE = {
+    "OPEN": OrderState.OPEN,
+    "CANCELLED": OrderState.CANCELED,
+    "CLOSED": OrderState.FILLED,
+}
+
+
+CUSTOM_TYPES = {
+    "runtime_id": 1,
+    "versioning": [],
+    "types": {
+        "OrderPayload": {
+            "type": "struct",
+            "type_mapping": [
+                ["client_order_id", "H256"],
+                ["user", "AccountId"],
+                ["main_account", "AccountId"],
+                ["pair", "String"],
+                ["side", "OrderSide"],
+                ["order_type", "OrderType"],
+                ["quote_order_quantity", "String"],
+                ["qty", "String"],
+                ["price", "String"],
+                ["timestamp", "i64"],
+            ],
+        },
+        "order_id": "H256",
+        "OrderSide": {
+            "type": "enum",
+            "type_mapping": [
+                ["Ask", "Null"],
+                ["Bid", "Null"],
+            ],
+        },
+        "OrderType": {
+            "type": "enum",
+            "type_mapping": [
+                ["LIMIT", "Null"],
+                ["MARKET", "Null"],
+            ],
+        },
+        "EcdsaSignature": "[u8; 65]",
+        "Ed25519Signature": "H512",
+        "Sr25519Signature": "H512",
+        "AnySignature": "H512",
+        "MultiSignature": {
+            "type": "enum",
+            "type_mapping": [
+                ["Ed25519", "Ed25519Signature"],
+                ["Sr25519", "Sr25519Signature"],
+                ["Ecdsa", "EcdsaSignature"],
+            ],
+        },
+    },
+}
+
+ORDER_NOT_FOUND_ERROR_CODE = "-32000"
+ORDER_NOT_FOUND_MESSAGE = "Order not found"
