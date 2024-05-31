@@ -2,9 +2,11 @@
 
 import datetime
 import json
+import logging
 import numpy as np
 import os
 from pprint import pprint
+from typing import Optional
 
 from dotenv import load_dotenv
 
@@ -17,6 +19,7 @@ from pysui.sui.sui_txn import SyncTransaction
 from pysui.sui.sui_types.scalars import ObjectID, SuiBoolean, SuiU8, SuiU64
 
 from hummingbot.connector.exchange.suidex.libsui._interface import cfg, client
+from hummingbot.logger import HummingbotLogger
 
 load_dotenv()
 
@@ -36,6 +39,14 @@ is_bid = False
 
 
 class DeepbookConnector:
+    _logger: Optional[HummingbotLogger] = None
+
+    @classmethod
+    def logger(cls) -> HummingbotLogger:
+        if cls._logger is None:
+            cls._logger = logging.getLogger(HummingbotLogger.logger_name_for_class(cls))
+        return cls._logger
+
     def __init__(self, client, cfg):
         self.client = client
         self.cfg = cfg
@@ -49,7 +60,7 @@ class DeepbookConnector:
             raise ValueError("Package ID or Pool Object ID not set")
 
     def create_account(self):
-        print(f"Package ID: {self.package_id}")
+        self.logger().info(f"Package ID: {self.package_id}")
 
         txn = SyncTransaction(client=client)
         account_cap = txn.move_call(
@@ -62,7 +73,7 @@ class DeepbookConnector:
         )
         tx_result = handle_result(txn.execute(gas_budget="10000000"))
         account_cap = json.loads(tx_result.to_json(indent=4)).get("effects").get("created")[0]["reference"]["objectId"]
-        print("created accaount cap: ", account_cap)
+        self.logger().info("created accaount cap: ", account_cap)
         return account_cap
 
     def deposit_base(self, account_cap=account_cap):  # noqa: mock
@@ -86,7 +97,7 @@ class DeepbookConnector:
         )
 
         tx_result = handle_result(txn.execute(gas_budget="10000000"))
-        print(tx_result.to_json(indent=4))
+        self.logger().info(tx_result.to_json(indent=4))
 
     def place_limit_order(
         self,
@@ -126,7 +137,7 @@ class DeepbookConnector:
             ],
         )
         tx_result = handle_result(txn.execute(gas_budget="10000000"))
-        print(tx_result.to_json(indent=4))
+        self.logger().info(tx_result.to_json(indent=4))
 
     def get_level2_book_status_bid_side(self):
         txn = SyncTransaction(client=client)
@@ -153,8 +164,8 @@ class DeepbookConnector:
         # Extract raw values (lists containing 0)
         price_vec = results[0]["returnValues"][0][0]
         depth_vec = results[0]["returnValues"][1][0]
-        print(f"price_vec: {price_vec}")
-        print(f"depth_vec: {depth_vec}")
+        self.logger().info(f"price_vec: {price_vec}")
+        self.logger().info(f"depth_vec: {depth_vec}")
 
     def get_level2_book_status_ask_side(self):
         txn = SyncTransaction(client=client)
@@ -171,18 +182,18 @@ class DeepbookConnector:
                 f"{self.package_id}::realusdc::REALUSDC",
             ],
         )
-        # print(return_value)
+        # self.logger().info(return_value)
         temp = txn.inspect_all()
         # pprint(temp)
         results = temp.results
         # result = handle_result(temp)
-        # print(results)
+        # self.logger().info(results)
 
         # Extract raw values (lists containing 0)
         price_vec = results[0]["returnValues"][0][0]
         depth_vec = results[0]["returnValues"][1][0]
-        print(f"price_vec: {price_vec}")
-        print(f"depth_vec: {depth_vec}")
+        self.logger().info(f"price_vec: {price_vec}")
+        self.logger().info(f"depth_vec: {depth_vec}")
 
 
 if __name__ == "__main__":
