@@ -1,40 +1,39 @@
 # The underlying configuration class
+import logging
 import os
 
 from dotenv import load_dotenv
 from pysui import SuiConfig, SyncClient
 from pysui.abstracts.client_keypair import SignatureScheme
 
+_logger = None
+
+
+def logger():
+    global _logger
+    if _logger is None:
+        _logger = logging.getLogger()
+    return _logger
+
+
 load_dotenv()
 
 network = "localnet"
 
-# Option-1: Setup configuration with one or more known keystrings and optional web services.
-cfg = SuiConfig.user_config(  # Required
-    # lsui / suibase
-    rpc_url="http://0.0.0.0:44342" if network == "testnet" else "http://0.0.0.0:44340",
-    # sui / sui client
-    # rpc_url= "https://fullnode.testnet.sui.io:443" if network == "testnet" else "https://fullnode.localnet.sui.io:443",
-    # Optional. First entry becomes the 'active-address'
-    # List elemente must be a valid Sui base64 keystring (i.e. 'key_type_flag | private_key_seed' )
-    # List can contain a dict for importing Wallet keys for example:
-    # prv_keys=['AO.....',{'wallet_key': '0x.....', 'key_scheme': SignatureScheme.ED25519}]
-    #   where
-    #   wallet_key value is 66 char hex string
-    #   key_scheme can be ED25519, SECP256K1 or SECP256R1
-    prv_keys=[
-        os.getenv("TESTNET_ADDR1_PRVKEY") if network == "testnet" else os.getenv("LOCALNET_ADDR1_PRVKEY"),
-        # {'wallet_key': os.getenv("ADDR1_PRVKEY"), 'key_scheme': SignatureScheme.ED25519}
-    ],
-    # Optional, only needed for subscribing
-    # ws_url="wss://fullnode.devnet.sui.io:443",
-)
-print(f"CONFIGURATION: {cfg.rpc_url}")
+prvkey_key = f"{network.upper()}_ADDR1_PRVKEY"
+rpc_port = 44342 if network == "testnet" else 44340
 
-# One address (and keypair), at least, should be created
-# First becomes the 'active-address'
-# _mnen, _address = cfg.create_new_keypair_and_address()
+user_config = {
+    "rpc_url": f"http://0.0.0.0:{rpc_port}",
+    "prv_keys": [os.getenv(prvkey_key)],
+}
+if not any(user_config["prv_keys"]):
+    raise RuntimeError(f"can't find {prvkey_key} in .env ")
 
-# Synchronous client
-print(f"The address used is : {cfg.active_address}")
+logger().debug(f"user_config: {user_config!r}")
+
+cfg = SuiConfig.user_config(**user_config)
+logger().info(f"CONFIGURATION: {cfg.rpc_url}")
+
+logger().info(f"The address used is : {cfg.active_address}")
 client = SyncClient(cfg)
