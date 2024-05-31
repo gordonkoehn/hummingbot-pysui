@@ -18,7 +18,7 @@ from pysui.sui.sui_txn import SyncTransaction
 # from pysui.sui.sui_types.address import SuiAddress
 from pysui.sui.sui_types.scalars import ObjectID, SuiBoolean, SuiU8, SuiU64
 
-from hummingbot.connector.exchange.suidex.libsui._interface import cfg, client, network as NETWORK
+from hummingbot.connector.exchange.suidex.libsui._interface import cfg as CFG, client as CLIENT, network as NETWORK
 from hummingbot.logger import HummingbotLogger
 
 load_dotenv()
@@ -47,14 +47,19 @@ class DeepbookConnector:
             cls._logger = logging.getLogger(HummingbotLogger.logger_name_for_class(cls))
         return cls._logger
 
-    def __init__(self, client, cfg, package_id=None, pool_object_id=None, net=None):
+    def __init__(self, client=None, cfg=None, package_id=None, pool_object_id=None, net=None, account_cap=None):
+        client = CLIENT if client is None else client
+        cfg = CFG if cfg is None else cfg
         net = NETWORK if net is None else net
         package_id_key = f"{net.upper()}_PACKAGE_ID"
         package_id = os.getenv(package_id_key, None) if package_id is None else package_id
         pool_object_id = os.getenv("POOL_OBJECT_ID", None) if pool_object_id is None else pool_object_id
+        account_cap_key = f"{net.upper()}_ACCOUNT_CAP"
+        account_cap = os.getenv(account_cap_key, account_cap) if account_cap is None else account_cap
 
         self.client = client
         self.cfg = cfg
+        self.account_cap = ACCOUNT_CAP if account_cap is None else account_cap
         self.package_id = package_id
         self.pool_object_id = pool_object_id
 
@@ -71,7 +76,7 @@ class DeepbookConnector:
     def create_account(self):
         self.logger().info(f"Package ID: {self.package_id}")
 
-        txn = SyncTransaction(client=client)
+        txn = SyncTransaction(client=self.client)
         account_cap = txn.move_call(
             target=f"{self.package_id}::clob_v2::create_account",
             arguments=[],
@@ -82,14 +87,13 @@ class DeepbookConnector:
         )
         tx_result = handle_result(txn.execute(gas_budget="10000000"))
         account_cap = json.loads(tx_result.to_json(indent=4)).get("effects").get("created")[0]["reference"]["objectId"]
+        self.account_cap = account_cap
         self.logger().info(f"created account cap: {account_cap}")
         return account_cap
 
-    def deposit_base(self, account_cap=None):  # noqa: mock
+    def deposit_base(self):  # noqa: mock
         # TODO: add case for sponsoredTransaction
-        account_cap = ACCOUNT_CAP if account_cap is None else account_cap
-
-        txn = SyncTransaction(client=client)
+        txn = SyncTransaction(client=self.client)
 
         # deposit 30 SUI
         amount = amount_to_deposit
@@ -99,7 +103,7 @@ class DeepbookConnector:
             arguments=[
                 ObjectID(self.pool_object_id),
                 txn.split_coin(coin=txn.gas, amounts=[amount]),
-                ObjectID(account_cap),
+                ObjectID(self.account_cap),
             ],
             type_arguments=[
                 "0x2::sui::SUI",
@@ -115,12 +119,9 @@ class DeepbookConnector:
         price=price,
         quantity=quantity,
         is_bid=is_bid,
-        account_cap=None,
     ):  # noqa: mock
         # TODO: add case for sponsoredTransaction
-        txn = SyncTransaction(client=client)
-
-        account_cap = ACCOUNT_CAP if account_cap is None else account_cap
+        txn = SyncTransaction(client=self.client)
 
         # defining range for mock order id
         # Define the lower and upper bounds for the random u64 integers (inclusive)
@@ -142,7 +143,7 @@ class DeepbookConnector:
                 SuiU64(round(int(datetime.datetime.utcnow().timestamp()) * 1000 + 24 * 60 * 60 * 100000000000000)),
                 SuiU8(1),
                 ObjectID("0x6"),
-                ObjectID(account_cap),
+                ObjectID(self.account_cap),
             ],
             type_arguments=[
                 "0x2::sui::SUI",
@@ -159,7 +160,7 @@ class DeepbookConnector:
         return self.get_level2_book_status("ask", *args, **kwargs)
 
     def get_level2_book_status(self, side):
-        txn = SyncTransaction(client=client)
+        txn = SyncTransaction(client=self.client)
         return_value = txn.move_call(
             target=f"{self.package_id}::clob_v2::get_level2_book_status_{side}_side",
             arguments=[
@@ -188,14 +189,14 @@ class DeepbookConnector:
 
         return results
 
-    def get_order_status(self, order_id, account_cap):
-        txn = SyncTransaction(client=client)
+    def get_order_status(self, order_id, account_cap=None):
+        txn = SyncTransaction(client=self.client)
         return_value = txn.move_call(
             target=f"{self.package_id}::clob_v2::get_order_status",
             arguments=[
                 ObjectID(self.pool_object_id),
                 SuiU64(order_id),
-                ObjectID(account_cap),
+                ObjectID(self.account_cap),
             ],
             type_arguments=[
                 "0x2::sui::SUI",
