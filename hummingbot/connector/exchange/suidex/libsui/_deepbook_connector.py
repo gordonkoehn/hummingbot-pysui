@@ -152,10 +152,16 @@ class DeepbookConnector:
         tx_result = handle_result(txn.execute(gas_budget="10000000"))
         self.logger().info(tx_result.to_json(indent=4))
 
-    def get_level2_book_status_bid_side(self):
+    def get_level2_book_status_bid_side(self, *args, **kwargs):
+        return self.get_level2_book_status("bid", *args, **kwargs)
+
+    def get_level2_book_status_ask_side(self, *args, **kwargs):
+        return self.get_level2_book_status("ask", *args, **kwargs)
+
+    def get_level2_book_status(self, side):
         txn = SyncTransaction(client=client)
         return_value = txn.move_call(
-            target=f"{self.package_id}::clob_v2::get_level2_book_status_bid_side",
+            target=f"{self.package_id}::clob_v2::get_level2_book_status_{side}_side",
             arguments=[
                 ObjectID(self.pool_object_id),
                 SuiU64(0),
@@ -177,36 +183,10 @@ class DeepbookConnector:
         # Extract raw values (lists containing 0)
         price_vec = results[0]["returnValues"][0][0]
         depth_vec = results[0]["returnValues"][1][0]
-        self.logger().info(f"price_vec: {price_vec}")
-        self.logger().info(f"depth_vec: {depth_vec}")
+        self.logger().debug(f"price_vec: {price_vec}")
+        self.logger().debug(f"depth_vec: {depth_vec}")
 
-    def get_level2_book_status_ask_side(self):
-        txn = SyncTransaction(client=client)
-        return_value = txn.move_call(
-            target=f"{self.package_id}::clob_v2::get_level2_book_status_ask_side",
-            arguments=[
-                ObjectID(self.pool_object_id),
-                SuiU64(0),
-                SuiU64(10**12),
-                ObjectID("0x6"),
-            ],
-            type_arguments=[
-                "0x2::sui::SUI",
-                f"{self.package_id}::realusdc::REALUSDC",
-            ],
-        )
-        # self.logger().info(return_value)
-        temp = txn.inspect_all()
-        # pprint(temp)
-        results = temp.results
-        # result = handle_result(temp)
-        # self.logger().info(results)
-
-        # Extract raw values (lists containing 0)
-        price_vec = results[0]["returnValues"][0][0]
-        depth_vec = results[0]["returnValues"][1][0]
-        self.logger().info(f"price_vec: {price_vec}")
-        self.logger().info(f"depth_vec: {depth_vec}")
+        return results
 
     def get_order_status(self, order_id, account_cap):
         txn = SyncTransaction(client=client)
