@@ -1694,3 +1694,19 @@ class SuidexExchangeTests(AbstractExchangeConnectorTests.ExchangeConnectorTests)
         digits = len(str(order_number))
         prefix = template_exchange_id[:-digits]
         return f"{prefix}{order_number}"
+
+
+def test_connector():
+    from hummingbot.connector.exchange.suidex.libsui import DeepbookConnector
+    from hummingbot.connector.exchange.suidex.libsui._interface import cfg, client
+
+    connector = DeepbookConnector(client, cfg)
+    account_cap = connector.create_account()  #
+    # print(connector.package_id)
+    # print(connector.pool_object_id)
+    # connector.deposit_base()
+    connector.place_limit_order(account_cap=account_cap)
+    # connector.place_limit_order()
+    # connector.place_limit_order()
+    connector.get_level2_book_status_bid_side()
+    connector.get_level2_book_status_ask_side()
