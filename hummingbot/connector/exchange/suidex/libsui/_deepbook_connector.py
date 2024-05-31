@@ -2,9 +2,9 @@
 
 import datetime
 import json
+import numpy
 import os
 
-import numpy
 from dotenv import load_dotenv
 
 # from numpy.random import PCG64, Generator
@@ -27,7 +27,13 @@ class DeepbookConnector:
         self.client = client
         self.cfg = cfg
         self.package_id = os.getenv("TESTNET_PACKAGE_ID") if network == "testnet" else os.getenv("LOCALNET_PACKAGE_ID")
-        self.pool_object_id = os.getenv("POOL_OBJECT_ID")
+        self.pool_object_id = (
+            os.getenv("TESTNET_POOL_OBJECT_ID") if network == "testnet" else os.getenv("LOCALNET_POOL_OBJECT_ID")
+        )
+
+        # check that package_id and pool_object_id are set
+        if self.package_id is None or self.pool_object_id is None:
+            raise ValueError("Package ID or Pool Object ID not set")
 
     def create_account(self):
         print(f"Package ID: {self.package_id}")
@@ -45,12 +51,10 @@ class DeepbookConnector:
         print(tx_result.to_json(indent=4))
 
     def deposit_base(
-        self, account_cap="0x37f5c9ae948df3e6363b0c28e8777deea60ea7066c8ae5d2582ce91bd55930d5"  # noqa: mock
+        self, account_cap="0xd63c08c66bd3183580630219217a998652f56a6759902942c3f0d686a66def85"  # noqa: mock
     ):  # noqa: mock
         # TODO: add case for sponsoredTransaction
         txn = SyncTransaction(client=client)
-
-        print(f"Package ID: {self.package_id}")
 
         txn.move_call(
             target=f"{self.package_id}::clob_v2::deposit_base",
@@ -118,6 +122,6 @@ class DeepbookConnector:
 
 if __name__ == "__main__":
     connector = DeepbookConnector(client, cfg)
-    connector.create_account()
+    # connector.create_account()
     connector.deposit_base()
     # connector.place_limit_order()
