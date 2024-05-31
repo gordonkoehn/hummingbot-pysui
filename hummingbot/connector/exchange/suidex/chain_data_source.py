@@ -42,12 +42,8 @@ CLASSES = [DeepbookConnector]
 
 def _connector(net=None, connector_cls=None, *args, **kwargs):
     """factory function to get chain connection"""
-    kwargs.setdefault("net", net if net is not None else NETS[0])
     connector_cls = CLASSES[0] if connector_cls is None else connector_cls
-    global _CONNECTOR
-    if _CONNECTOR is None:
-        _CONNECTOR = connector_cls(*args, **kwargs)
-    return _CONNECTOR
+    return connector_cls(*args, **kwargs)  # TODO: singleton
 
 
 if TYPE_CHECKING:
@@ -84,6 +80,7 @@ class SuidexDataSource:
         # self._runtime_config.update_type_registry(CONSTANTS.CUSTOM_TYPES)
 
         self._query_executor = None  # GrapQLQueryExecutor(auth=self._auth, domain=self._domain)
+        self._chain_executor = _connector()
 
         self._publisher = PubSub()
         self._last_received_message_time = 0
