@@ -4,6 +4,7 @@ import datetime
 import json
 import numpy as np
 import os
+from pprint import pprint
 
 from dotenv import load_dotenv
 
@@ -22,8 +23,8 @@ load_dotenv()
 ########################
 # Paramaters to be set
 network = "localnet"
-# account cap / upgrade cap of Pool object created
-account_cap = "0xd63c08c66bd3183580630219217a998652f56a6759902942c3f0d686a66def85"  # noqa: mock
+# account cap / account cap (= key to account) of the user
+account_cap = "0x9d4c904c0e51d9e09cbba1f24626060e9eee6460d4430b3539d43a2578c9ff07"  # noqa: mock
 ########################
 
 
@@ -53,17 +54,22 @@ class DeepbookConnector:
             recipient=self.cfg.active_address,
         )
         tx_result = handle_result(txn.execute(gas_budget="10000000"))
-        print(tx_result.to_json(indent=4))
+        account_cap = json.loads(tx_result.to_json(indent=4)).get("effects").get("created")[0]["reference"]["objectId"]
+        print("created accaount cap: ", account_cap)
+        return account_cap
 
     def deposit_base(self, account_cap=account_cap):  # noqa: mock
         # TODO: add case for sponsoredTransaction
         txn = SyncTransaction(client=client)
 
+        # deposit 30 SUI
+        amount = 1000000000 * 30
+
         txn.move_call(
             target=f"{self.package_id}::clob_v2::deposit_base",
             arguments=[
                 ObjectID(self.pool_object_id),
-                txn.split_coin(coin=txn.gas, amounts=[1000000000]),
+                txn.split_coin(coin=txn.gas, amounts=[amount]),
                 ObjectID(account_cap),
             ],
             type_arguments=[
@@ -77,9 +83,9 @@ class DeepbookConnector:
 
     def place_limit_order(
         self,
-        price=1000000000,
-        quantity=1000000000,
-        is_bid=True,
+        price=10**9 * np.random.randint(1, 14),
+        quantity=1,
+        is_bid=False,
         account_cap=account_cap,
     ):  # noqa: mock
         # TODO: add case for sponsoredTransaction
@@ -89,6 +95,9 @@ class DeepbookConnector:
         # Define the lower and upper bounds for the random u64 integers (inclusive)
         low = 0
         high = np.iinfo(np.uint64).max  # Maximum value for uint64
+
+        # sett ask price to
+        print(f"Placing {'bid' if is_bid else 'ask'} order with price {price} and quantity {quantity}")
 
         txn.move_call(
             target=f"{self.package_id}::clob_v2::place_limit_order",
@@ -112,25 +121,41 @@ class DeepbookConnector:
         tx_result = handle_result(txn.execute(gas_budget="10000000"))
         print(tx_result.to_json(indent=4))
 
-    # WIP
-    def get_level2_book_status_bid_side(self):
+    def get_level2_book_status_ask_side(self):
         txn = SyncTransaction(client=client)
         return_value = txn.move_call(
-            target=f"{self.package_id}::clob_v2::get_level2_book_status_bid_side",
+            target=f"{self.package_id}::clob_v2::get_level2_book_status_ask_side",
             arguments=[
                 ObjectID(self.pool_object_id),
                 SuiU64(10000000),
                 SuiU64(100000000000),
+                ObjectID("0x6"),
+            ],
+            type_arguments=[
+                "0x2::sui::SUI",
+                f"{self.package_id}::realusdc::REALUSDC",
             ],
         )
-        result = handle_result(txn.inspect_all())
         print(return_value)
-        print(result)
+        temp = txn.inspect_all()
+        pprint(temp)
+        results = temp.results
+        # result = handle_result(temp)
+        print(results)
+
+        # Extract raw values (lists containing 0)
+        price_vec = results[0]["returnValues"][0][0]
+        depth_vec = results[0]["returnValues"][1][0]
+        print(f"price_vec: {price_vec}")
+        print(f"depth_vec: {depth_vec}")
 
 
 if __name__ == "__main__":
     connector = DeepbookConnector(client, cfg)
-    connector.create_account()
+    # connector.create_account()#
+    # print(connector.package_id)
+    # print(connector.pool_object_id)
     connector.deposit_base()
     connector.place_limit_order()
-    # connector.get_level2_book_status_bid_side()
+    connector.place_limit_order()
+    connector.get_level2_book_status_ask_side()
