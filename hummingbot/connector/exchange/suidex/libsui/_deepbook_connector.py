@@ -2,7 +2,7 @@
 
 import datetime
 import json
-import numpy
+import numpy as np
 import os
 
 from dotenv import load_dotenv
@@ -19,7 +19,12 @@ from hummingbot.connector.exchange.suidex.libsui._interface import cfg, client
 
 load_dotenv()
 
+########################
+# Paramaters to be set
 network = "localnet"
+# account cap / upgrade cap of Pool object created
+account_cap = "0xd63c08c66bd3183580630219217a998652f56a6759902942c3f0d686a66def85"  # noqa: mock
+########################
 
 
 class DeepbookConnector:
@@ -50,9 +55,7 @@ class DeepbookConnector:
         tx_result = handle_result(txn.execute(gas_budget="10000000"))
         print(tx_result.to_json(indent=4))
 
-    def deposit_base(
-        self, account_cap="0xd63c08c66bd3183580630219217a998652f56a6759902942c3f0d686a66def85"  # noqa: mock
-    ):  # noqa: mock
+    def deposit_base(self, account_cap=account_cap):  # noqa: mock
         # TODO: add case for sponsoredTransaction
         txn = SyncTransaction(client=client)
 
@@ -72,21 +75,26 @@ class DeepbookConnector:
         tx_result = handle_result(txn.execute(gas_budget="10000000"))
         print(tx_result.to_json(indent=4))
 
-    # WIP
     def place_limit_order(
         self,
         price=1000000000,
         quantity=1000000000,
         is_bid=True,
-        account_cap="0x37f5c9ae948df3e6363b0c28e8777deea60ea7066c8ae5d2582ce91bd55930d5",  # noqa: mock
+        account_cap=account_cap,
     ):  # noqa: mock
         # TODO: add case for sponsoredTransaction
         txn = SyncTransaction(client=client)
+
+        # defining range for mock order id
+        # Define the lower and upper bounds for the random u64 integers (inclusive)
+        low = 0
+        high = np.iinfo(np.uint64).max  # Maximum value for uint64
+
         txn.move_call(
             target=f"{self.package_id}::clob_v2::place_limit_order",
             arguments=[
                 ObjectID(self.pool_object_id),
-                SuiU64(numpy.random.Generator(PCG64()).integers(1, 100000000, size=1)),
+                SuiU64(np.random.randint(low, high + 1, dtype=np.uint64)),
                 SuiU64(price),
                 SuiU64(quantity),
                 SuiU8(0),
@@ -122,6 +130,7 @@ class DeepbookConnector:
 
 if __name__ == "__main__":
     connector = DeepbookConnector(client, cfg)
-    # connector.create_account()
+    connector.create_account()
     connector.deposit_base()
-    # connector.place_limit_order()
+    connector.place_limit_order()
+    # connector.get_level2_book_status_bid_side()
