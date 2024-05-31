@@ -18,14 +18,13 @@ from pysui.sui.sui_txn import SyncTransaction
 # from pysui.sui.sui_types.address import SuiAddress
 from pysui.sui.sui_types.scalars import ObjectID, SuiBoolean, SuiU8, SuiU64
 
-from hummingbot.connector.exchange.suidex.libsui._interface import cfg, client
+from hummingbot.connector.exchange.suidex.libsui._interface import cfg, client, network
 from hummingbot.logger import HummingbotLogger
 
 load_dotenv()
 
 ########################
 # Paramaters to be set
-network = "localnet"
 # account cap / account cap (= key to account) of the user
 account_cap = "0x9d4c904c0e51d9e09cbba1f24626060e9eee6460d4430b3539d43a2578c9ff07"  # noqa: mock
 
@@ -47,17 +46,22 @@ class DeepbookConnector:
             cls._logger = logging.getLogger(HummingbotLogger.logger_name_for_class(cls))
         return cls._logger
 
-    def __init__(self, client, cfg):
+    def __init__(self, client, cfg, package_id=None, pool_object_id=None):
         self.client = client
         self.cfg = cfg
-        self.package_id = os.getenv("TESTNET_PACKAGE_ID") if network == "testnet" else os.getenv("LOCALNET_PACKAGE_ID")
-        self.pool_object_id = (
-            os.getenv("TESTNET_POOL_OBJECT_ID") if network == "testnet" else os.getenv("LOCALNET_POOL_OBJECT_ID")
-        )
+        package_id_key = f"{network.upper()}_PACKAGE_ID"
+        self.package_id = os.getenv(package_id_key, None) if package_id is None else package_id
+        self.pool_object_id = os.getenv("POOL_OBJECT_ID", None) if pool_object_id is None else pool_object_id
 
         # check that package_id and pool_object_id are set
-        if self.package_id is None or self.pool_object_id is None:
-            raise ValueError("Package ID or Pool Object ID not set")
+        if self.package_id is None:
+            raise ValueError(
+                f"DeepbookConnector.__init__(..): package_id cannot be None (check .env::{package_id_key}?)"
+            )
+        if self.pool_object_id is None:
+            raise ValueError(
+                f"DeepbookConnector.__init__(..): pool_object_id cannot be None (maybe check .env::POOL_OBJECT_ID?)"
+            )
 
     def create_account(self):
         self.logger().info(f"Package ID: {self.package_id}")

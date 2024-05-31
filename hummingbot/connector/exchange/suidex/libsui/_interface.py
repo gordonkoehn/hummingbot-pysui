@@ -5,4 +5,4 @@ Note:
     so we do not introduce circular imports.
 """
 
-from hummingbot.connector.exchange.suidex.libsui._sui_client_config import cfg, client
+from hummingbot.connector.exchange.suidex.libsui._sui_client_config import cfg, client, network
