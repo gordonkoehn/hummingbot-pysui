@@ -16,7 +16,18 @@ def logger():
     return _logger
 
 
-load_dotenv()
+_inited = None
+
+
+def _init():
+    global _inited
+    if not _inited:
+        load_dotenv()
+        _inited = True
+
+
+_init()  # TODO: this should not be done at import time; find Hummingbot & py.test lifecycle event to hook into so and call this at the right time
+
 
 network = os.environ.get("SUIDEX_NETWORK", "localnet")
 
