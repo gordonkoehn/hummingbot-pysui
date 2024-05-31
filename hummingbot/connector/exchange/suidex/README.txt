@@ -15,3 +15,5 @@
   - asks()
   - bids()
   - open_orders()
+- [ ] create recording of:
+  - hummingbot SuiDex code placing limit orders on-chain (ideally testnet)
