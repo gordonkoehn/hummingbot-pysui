@@ -7,22 +7,17 @@ from pysui.sui.sui_txn import SyncTransaction
 # from pysui.sui.sui_types.address import SuiAddress
 from pysui.sui.sui_types.scalars import ObjectID, SuiU64
 
-from hummingbot.connector.exchange.suidex.libsui._sui_client_config import cfg, client
+from hummingbot.connector.exchange.suidex.libsui._sui_client_config import cfg, client, network as NETWORK
 
 load_dotenv()
 
-network = "localnet"
 
-
-def create_pool():
+def create_pool(net=None):
     """Creates a pool with REALUSDC and SUI"""
-
-    if network == "testnet":
-        package_id = os.getenv("TESTNET_PACKAGE_ID")
-    elif network == "localnet":
-        package_id = os.getenv("LOCALNET_PACKAGE_ID")
-    else:
-        raise ValueError("Network not supported")
+    net = NETWORK if net is None else net
+    package_id = os.getenv(f"{net.upper()}_PACKAGE_ID")
+    if package_id is None:
+        raise ValueError(f"Network {net} not supported (add {net.upper()}_PACKAGE_ID to .env?)")
 
     # TODO: add case for sponsoredTransaction
     txn = SyncTransaction(client=client)
@@ -35,17 +30,17 @@ def create_pool():
     # gas_object = txn.split_coin_and_return(coin=coin_to_split, split_count=2)
 
     returned_pool = txn.move_call(
-        target=f"{package_id}::clob_v2::create_pool_with_return",
+        target=f"{package_id}::clob_v2::create_pool",
         arguments=[SuiU64("100000"), SuiU64("100000"), txn.split_coin(coin=txn.gas, amounts=[1000000000])],
         type_arguments=[
             "0x2::sui::SUI",
             f"{package_id}::realusdc::REALUSDC",
         ],
     )
-    txn.transfer_objects(
-        transfers=[returned_pool],
-        recipient=cfg.active_address,
-    )
+    # txn.transfer_objects(
+    #     transfers=[returned_pool],
+    #     recipient=cfg.active_address,
+    # )
     tx_result = handle_result(txn.execute(gas_budget="10000000"))
 
     print(tx_result.to_json(indent=2))

@@ -18,7 +18,7 @@ from pysui.sui.sui_txn import SyncTransaction
 # from pysui.sui.sui_types.address import SuiAddress
 from pysui.sui.sui_types.scalars import ObjectID, SuiBoolean, SuiU8, SuiU64
 
-from hummingbot.connector.exchange.suidex.libsui._interface import cfg, client, network
+from hummingbot.connector.exchange.suidex.libsui._interface import cfg, client, network as NETWORK
 from hummingbot.logger import HummingbotLogger
 
 load_dotenv()
@@ -33,6 +33,7 @@ amount_to_deposit = 10**9 * 10  # 10 SUI
 price = 10**9 * 1.5  # 1.5 SUI per REALUSDC
 quantity = 1_000_000_000
 is_bid = False
+order_id = 136375
 
 ########################
 
@@ -46,12 +47,16 @@ class DeepbookConnector:
             cls._logger = logging.getLogger(HummingbotLogger.logger_name_for_class(cls))
         return cls._logger
 
-    def __init__(self, client, cfg, package_id=None, pool_object_id=None):
+    def __init__(self, client, cfg, package_id=None, pool_object_id=None, net=None):
+        net = NETWORK if net is None else net
+        package_id_key = f"{net.upper()}_PACKAGE_ID"
+        package_id = os.getenv(package_id_key, None) if package_id is None else package_id
+        pool_object_id = os.getenv("POOL_OBJECT_ID", None) if pool_object_id is None else pool_object_id
+
         self.client = client
         self.cfg = cfg
-        package_id_key = f"{network.upper()}_PACKAGE_ID"
-        self.package_id = os.getenv(package_id_key, None) if package_id is None else package_id
-        self.pool_object_id = os.getenv("POOL_OBJECT_ID", None) if pool_object_id is None else pool_object_id
+        self.package_id = package_id
+        self.pool_object_id = pool_object_id
 
         # check that package_id and pool_object_id are set
         if self.package_id is None:
@@ -129,7 +134,7 @@ class DeepbookConnector:
             target=f"{self.package_id}::clob_v2::place_limit_order",
             arguments=[
                 ObjectID(self.pool_object_id),
-                SuiU64(np.random.randint(low, high + 1, dtype=np.uint64)),
+                SuiU64(order_id),
                 SuiU64(price),
                 SuiU64(quantity),
                 SuiU8(0),
@@ -203,6 +208,28 @@ class DeepbookConnector:
         self.logger().info(f"price_vec: {price_vec}")
         self.logger().info(f"depth_vec: {depth_vec}")
 
+    def get_order_status(self, order_id, account_cap):
+        txn = SyncTransaction(client=client)
+        return_value = txn.move_call(
+            target=f"{self.package_id}::clob_v2::get_order_status",
+            arguments=[
+                ObjectID(self.pool_object_id),
+                SuiU64(order_id),
+                ObjectID(account_cap),
+            ],
+            type_arguments=[
+                "0x2::sui::SUI",
+                f"{self.package_id}::realusdc::REALUSDC",
+            ],
+        )
+
+        print("=== GET ORDER STATUS ===")
+        pprint(txn.inspect_all())
+
+        result = handle_result(txn.inspect_all())
+        print(return_value)
+        print(result)
+
 
 if __name__ == "__main__":
     connector = DeepbookConnector(client, cfg)
@@ -215,3 +242,4 @@ if __name__ == "__main__":
     # connector.place_limit_order()
     connector.get_level2_book_status_bid_side()
     connector.get_level2_book_status_ask_side()
+    connector.get_order_status(order_id, account_cap)

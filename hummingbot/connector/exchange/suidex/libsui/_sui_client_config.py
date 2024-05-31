@@ -18,13 +18,29 @@ def logger():
 
 load_dotenv()
 
-network = "localnet"
+network = os.environ.get("SUIDEX_NETWORK", "localnet")
 
 prvkey_key = f"{network.upper()}_ADDR1_PRVKEY"
-rpc_port = 44342 if network == "testnet" else 44340
+
+
+RPC_PORT = {
+    "testnet": 44342,
+    "localnet": 44340,
+}
+if network not in RPC_PORT:
+    raise ValueError(f"can't find RPC_PORT for {network=}")
+
+
+RPC_URL = {
+    "testnet": "https://rpc.testnet.sui.io:443",
+    # "testnet": f"http://0.0.0.0:{rpc_port}",
+    "localnet": f"http://0.0.0.0:{RPC_PORT[network]}",
+}
+if network not in RPC_URL:
+    raise ValueError(f"can't find RPC_URL for {network=}")
 
 user_config = {
-    "rpc_url": f"http://0.0.0.0:{rpc_port}",
+    "rpc_url": RPC_URL[network],
     "prv_keys": [os.getenv(prvkey_key)],
 }
 if not any(user_config["prv_keys"]):
