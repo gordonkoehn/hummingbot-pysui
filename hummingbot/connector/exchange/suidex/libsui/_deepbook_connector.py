@@ -75,6 +75,10 @@ class DeepbookConnector:
             raise ValueError(
                 f"DeepbookConnector.__init__(..): pool_object_id cannot be None (maybe check .env::{pool_object_id_key}?)"
             )
+        if self.account_cap is None:
+            self.logger().info(
+                f"DeepbookConnector.__init__(..): account_cap is None; many functions require an `account_cap` so self.create_account() should be called first"
+            )
 
     def create_account(self):
         # FUTURE: should we refuse to create a new account if self.account_cap is not None?
