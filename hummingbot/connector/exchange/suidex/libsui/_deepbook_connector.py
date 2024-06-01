@@ -231,4 +231,4 @@ if __name__ == "__main__":
     # connector.place_limit_order()
     connector.get_level2_book_status_bid_side()
     connector.get_level2_book_status_ask_side()
-    connector.get_order_status(order_id, account_cap)
+    connector.get_order_status(order_id, ACCOUNT_CAP)
