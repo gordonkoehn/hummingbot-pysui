@@ -26,7 +26,9 @@ load_dotenv()
 ########################
 # Paramaters to be set
 # account cap / account cap (= key to account) of the user
+### DEPRECATED -- use `self.account_cap` on your DeepbookConnector instance instead
 ACCOUNT_CAP = "0x9d4c904c0e51d9e09cbba1f24626060e9eee6460d4430b3539d43a2578c9ff07"  # noqa: mock
+### DEPRECATED -- use `self.account_cap` on your DeepbookConnector instance instead
 
 ##
 amount_to_deposit = 10**9 * 10  # 10 SUI
@@ -74,6 +76,7 @@ class DeepbookConnector:
             )
 
     def create_account(self):
+        # FUTURE: should we refuse to create a new account if self.account_cap is not None?
         self.logger().info(f"Package ID: {self.package_id}")
 
         txn = SyncTransaction(client=self.client)
