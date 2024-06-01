@@ -13,7 +13,7 @@ from scalecodec.type_registry import load_type_registry_preset
 from substrateinterface import Keypair, KeypairType
 
 from hummingbot.connector.exchange.suidex import suidex_constants as CONSTANTS, suidex_utils
-from hummingbot.connector.exchange.suidex.libsui import DeepbookConnector
+from hummingbot.connector.exchange.suidex.libsui.deepbook import DeepbookConnector
 
 # from hummingbot.connector.exchange.suidex.suidex_query_executor import GrapQLQueryExecutor
 from hummingbot.connector.trading_rule import TradingRule
