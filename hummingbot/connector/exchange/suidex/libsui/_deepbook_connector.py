@@ -55,7 +55,8 @@ class DeepbookConnector:
         net = NETWORK if net is None else net
         package_id_key = f"{net.upper()}_PACKAGE_ID"
         package_id = os.getenv(package_id_key, None) if package_id is None else package_id
-        pool_object_id = os.getenv("POOL_OBJECT_ID", None) if pool_object_id is None else pool_object_id
+        pool_object_id_key = f"{net.upper()}_POOL_OBJECT_ID"
+        pool_object_id = os.getenv(pool_object_id_key, None) if pool_object_id is None else pool_object_id
         account_cap_key = f"{net.upper()}_ACCOUNT_CAP"
         account_cap = os.getenv(account_cap_key, account_cap) if account_cap is None else account_cap
 
@@ -72,7 +73,7 @@ class DeepbookConnector:
             )
         if self.pool_object_id is None:
             raise ValueError(
-                f"DeepbookConnector.__init__(..): pool_object_id cannot be None (maybe check .env::POOL_OBJECT_ID?)"
+                f"DeepbookConnector.__init__(..): pool_object_id cannot be None (maybe check .env::{pool_object_id_key}?)"
             )
 
     def create_account(self):
