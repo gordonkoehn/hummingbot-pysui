@@ -29,8 +29,8 @@ load_dotenv()
 ACCOUNT_CAP = "0x9d4c904c0e51d9e09cbba1f24626060e9eee6460d4430b3539d43a2578c9ff07"  # noqa: mock
 
 ##
-amount_to_deposit = 10**9 * 10  # 10 SUI
-price = 10**9 * 1.5  # 1.5 SUI per REALUSDC
+amount_to_deposit = 10**9 * 1  # 10 SUI
+price = 10**9 * 0.5  # 0.5 SUI per REALUSDC
 quantity = 1_000_000_000
 is_bid = False
 order_id = 136375
@@ -53,7 +53,8 @@ class DeepbookConnector:
         net = NETWORK if net is None else net
         package_id_key = f"{net.upper()}_PACKAGE_ID"
         package_id = os.getenv(package_id_key, None) if package_id is None else package_id
-        pool_object_id = os.getenv("POOL_OBJECT_ID", None) if pool_object_id is None else pool_object_id
+
+        pool_object_id = os.getenv(f"{net.upper()}_POOL_OBJECT_ID", None) if pool_object_id is None else pool_object_id
         account_cap_key = f"{net.upper()}_ACCOUNT_CAP"
         account_cap = os.getenv(account_cap_key, account_cap) if account_cap is None else account_cap
 
@@ -217,10 +218,10 @@ if __name__ == "__main__":
     # connector.create_account()#
     # print(connector.package_id)
     # print(connector.pool_object_id)
-    # connector.deposit_base()
+    connector.deposit_base()
     connector.place_limit_order()
     # connector.place_limit_order()
     # connector.place_limit_order()
     connector.get_level2_book_status_bid_side()
     connector.get_level2_book_status_ask_side()
-    connector.get_order_status(order_id, account_cap)
+    connector.get_order_status(order_id, ACCOUNT_CAP)
