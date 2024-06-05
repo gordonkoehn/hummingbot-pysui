@@ -80,6 +80,13 @@ class DeepbookConnector:
                 f"DeepbookConnector.__init__(..): account_cap is None; many functions require an `account_cap` so self.create_account() should be called first"
             )
 
+    @property
+    def active_address(self):
+        if self.cfg is None:
+            return None
+        else:
+            return self.cfg.active_address
+
     def create_account(self):
         # FUTURE: should we refuse to create a new account if self.account_cap is not None?
         self.logger().info(f"Package ID: {self.package_id}")
@@ -91,7 +98,7 @@ class DeepbookConnector:
         )
         txn.transfer_objects(
             transfers=[account_cap],
-            recipient=self.cfg.active_address,
+            recipient=self.active_address,
         )
         tx_result = handle_result(txn.execute(gas_budget="10000000"))
         account_cap = json.loads(tx_result.to_json(indent=4)).get("effects").get("created")[0]["reference"]["objectId"]
