@@ -7,11 +7,10 @@ import os
 
 from typing import Any, Optional, Tuple
 
-from dotenv import load_dotenv
-
 import pysui
 import pysui.sui.sui_txn
 
+from dotenv import load_dotenv
 
 ONE_SUI = 10**9
 
@@ -29,7 +28,6 @@ TYPE_SUI = "0x2::sui::SUI"
 
 ASSET_QUOTE = ASSET_ACCOUNTING
 ASSET_BASE = ASSET_SUI
-
 
 
 __all__ = [
@@ -59,7 +57,7 @@ RPC_PORT = {
 }
 
 RPC_URL = {net: f"https://rpc.{net}.sui.io:443" for net in NETS if net != "localnet"}
-RPC_URL["localnet"] = f"http://0.0.0.0:{RPC_PORT['localnet']}",
+RPC_URL["localnet"] = (f"http://0.0.0.0:{RPC_PORT['localnet']}",)
 
 
 _NETWORK = None
@@ -169,3 +167,74 @@ def _teardown():
     del RPC_URL["localnet"]
 
 
+def libsui_rpc_handler(result: pysui.SuiRpcResult, debug=True) -> Any:
+    """succeed-or-raise handler for SuiRpcResults
+
+    :param result: The result from calling Sui RPC API
+    :type result: SuiRpcResult
+    :return: The data from call if valid
+    :rtype: Any
+    """
+    if result and result.is_ok():
+        return (result.result_data, result) if debug else result.result_data
+    else:
+        raise RuntimeError(f"Error in result: {result.result_string}")
+
+
+def execute_and_handle_result(
+    txn: pysui.sui.sui_txn.SyncTransaction,
+    debug: Optional[bool] = None,
+    strict: Optional[bool] = None,
+    logger: Optional[logging.Logger] = None,
+) -> Tuple[bool, str, Any]:
+    logger = logging.getLogger() if logger is None else logger
+    handler = lambda result, debug=debug: libsui_rpc_handler(result, debug=debug)
+    result = pysui.handle_result(txn.execute(gas_budget="10000000"), handler=handler)
+    if debug:
+        tx_result, tx_result_data = result
+    else:
+        tx_result, tx_result_data = result, None
+    try:
+        tx_result_json_str = tx_result.to_json(indent=4)
+        tx_result_json = json.loads(tx_result_json_str)
+    except Exception as ex:
+        logger.error(f"execute_and_handle_result(..): failed to get JSON: {ex=} ({type(ex)})", exc_info=True)
+        tx_result_json = None
+    success = tx_result.effects.status.succeeded
+    success_code = "FAIL" if not success else "GOOD"
+    log = logger.info if success else logger.error
+    log(f"execute_and_handle_result(..): {success_code} - tx_result: {tx_result_json} ({txn=})")
+    if strict and not success:
+        raise RuntimeException(tx_result)
+    return success, tx_result_json, tx_result
+
+
+def find_objects(client, sui_type, address_owner=None, ordered_by_type_version=True):
+    find_results = client.get_objects(address=address_owner)
+    try:
+        active_address = str(client._config._active_address)
+    except Exception as ex:
+        active_address = f"<unable to access in {client=}: {ex=}"
+    if not find_results:
+        logger().warning(f"find_objects(..): no results from client.get_objects({address_owner=}) ({active_address=}")
+        return None
+
+    objects_all = find_results.result_data.to_dict()["data"]
+    if not objects_all:
+        logger().warning(f"find_objects(..): empty list from client.get_objects({address_owner=})?! ({active_address=}")
+        return []
+    if ordered_by_type_version:
+        objects_all = list(sorted(objects_all, key=lambda el: (el["type"], el["version"])))
+
+    objects = [o for o in objects_all if sui_type in o["type"]]
+
+    if not objects:
+        logger().warning(
+            f"find_objects(..): found no objects of type {sui_type=} from {len(objects_all)} objects returned by client.get_objects({address_owner=}) ({active_address=}"
+        )
+    else:
+        logger().debug(
+            f"find_objects(..): found {len(objects)} objects of type {sui_type=} from {len(objects_all)} objects returned by client.get_objects({address_owner=}) ({active_address=}"
+        )
+
+    return objects
