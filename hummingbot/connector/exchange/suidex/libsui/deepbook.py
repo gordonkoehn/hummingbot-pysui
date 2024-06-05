@@ -24,10 +24,6 @@ from hummingbot.logger import HummingbotLogger
 
 ########################
 # Paramaters to be set
-# account cap / account cap (= key to account) of the user
-### DEPRECATED -- use `self.account_cap` on your DeepbookConnector instance instead
-ACCOUNT_CAP = "0x9d4c904c0e51d9e09cbba1f24626060e9eee6460d4430b3539d43a2578c9ff07"  # noqa: mock
-### DEPRECATED -- use `self.account_cap` on your DeepbookConnector instance instead
 
 ##
 amount_to_deposit = 10**9 * 10  # 10 SUI
@@ -65,9 +61,12 @@ class DeepbookConnector:
 
         self.client = client
         self.cfg = cfg
-        self.account_cap = ACCOUNT_CAP if account_cap is None else account_cap
+        self.account_cap = account_cap
         self.package_id = package_id
         self.pool_object_id = pool_object_id
+
+        if self.account_cap is None:
+            self.account_cap = self.get_account_cap(create_if_needed=True)
 
         # check that package_id and pool_object_id are set
         if self.package_id is None:
@@ -91,6 +90,7 @@ class DeepbookConnector:
             return self.cfg.active_address
 
     def create_account(self):
+        """public fun create_account(ctx: &mut TxContext): AccountCap {"""
         # FUTURE: should we refuse to create a new account if self.account_cap is not None?
         self.logger().info(f"Package ID: {self.package_id}")
 
@@ -103,10 +103,22 @@ class DeepbookConnector:
             transfers=[account_cap],
             recipient=self.active_address,
         )
-        tx_result = handle_result(txn.execute(gas_budget="10000000"))
-        account_cap = json.loads(tx_result.to_json(indent=4)).get("effects").get("created")[0]["reference"]["objectId"]
+        success, tx_result_json, tx_result = libsui.execute_and_handle_result(txn)
+        self.logger().debug(tx_result_json)
+
+        account_cap = tx_result_json.get("effects").get("created")[0]["reference"]["objectId"]
         self.account_cap = account_cap
         self.logger().info(f"created account cap: {account_cap}")
+        return account_cap
+
+    def get_account_cap(self, create_if_needed=False):
+        account_cap_dicts = libsui.find_objects(self.client, "AccountCap", address_owner=self.active_address)
+        account_cap_dict = account_cap_dicts[-1] if account_cap_dicts else {}
+        if (account_cap := account_cap_dict.get("objectId", None)) is None:
+            if create_if_needed:
+                account_cap = self.create_account()
+            else:
+                raise RuntimeError("No AccountCap object could be found?! (net={self._network}, active_address={self.active_address})")
         return account_cap
 
     def deposit_base(self):  # noqa: mock
