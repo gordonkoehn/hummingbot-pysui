@@ -18,10 +18,10 @@ from pysui.sui.sui_txn import SyncTransaction
 # from pysui.sui.sui_types.address import SuiAddress
 from pysui.sui.sui_types.scalars import ObjectID, SuiBoolean, SuiU8, SuiU64
 
-from hummingbot.connector.exchange.suidex.libsui._interface import cfg as CFG, client as CLIENT, network as NETWORK
 from hummingbot.logger import HummingbotLogger
 
-load_dotenv()
+import hummingbot.connector.exchange.suidex.libsui as libsui
+
 
 ########################
 # Paramaters to be set
@@ -50,6 +50,10 @@ class DeepbookConnector:
         return cls._logger
 
     def __init__(self, client=None, cfg=None, package_id=None, pool_object_id=None, net=None, account_cap=None):
+        load_dotenv()
+
+        if not all((client, cfg, net)):
+            NETWORK, CFG, CLIENT = libsui.init()
         client = CLIENT if client is None else client
         cfg = CFG if cfg is None else cfg
         net = NETWORK if net is None else net
