@@ -5,23 +5,22 @@ import json
 import logging
 import numpy as np
 import os
+
 from pprint import pprint
 from typing import Optional
 
 from dotenv import load_dotenv
 
 # from numpy.random import PCG64, Generator
-from pysui import handle_result
 from pysui.sui.sui_builders.get_builders import GetObjectsOwnedByAddress
 from pysui.sui.sui_txn import SyncTransaction
 
 # from pysui.sui.sui_types.address import SuiAddress
 from pysui.sui.sui_types.scalars import ObjectID, SuiBoolean, SuiU8, SuiU64
 
-from hummingbot.logger import HummingbotLogger
-
 import hummingbot.connector.exchange.suidex.libsui as libsui
 
+from hummingbot.logger import HummingbotLogger
 
 ########################
 # Paramaters to be set
