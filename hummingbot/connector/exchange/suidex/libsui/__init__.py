@@ -1,11 +1,17 @@
 """Provide a python interface to the Sui Deepbook"""
 
 import collections.abc
+import json
 import logging
 import os
 
+from typing import Any, Optional, Tuple
+
 from dotenv import load_dotenv
-from pysui import SuiConfig, SyncClient
+
+import pysui
+import pysui.sui.sui_txn
+
 
 ONE_SUI = 10**9
 
@@ -25,27 +31,36 @@ ASSET_QUOTE = ASSET_ACCOUNTING
 ASSET_BASE = ASSET_SUI
 
 
+
 __all__ = [
     "ASSET_ACCOUNTING",
     "ASSET_QUOTE",
     "ASSET_BASE",
     "ASSET_SUI",
+    "NETS",
+    "RPC_PORT",
+    "RPC_URL",
     "ONE_SUI",
+    "ensure_init",
+    "execute_and_handle_result",
+    "init",
+    "logger",
 ]
 
 
 _logger = None
 
 
+NETS = ["localnet", "testnet", "mainnet"]
+
 RPC_PORT = {
     "testnet": 44342,
     "localnet": 44340,
 }
 
-RPC_URL = {
-    "testnet": "https://rpc.testnet.sui.io:443",
-    # "testnet": f"http://0.0.0.0:{rpc_port}",
-}
+RPC_URL = {net: f"https://rpc.{net}.sui.io:443" for net in NETS if net != "localnet"}
+RPC_URL["localnet"] = f"http://0.0.0.0:{RPC_PORT['localnet']}",
+
 
 _NETWORK = None
 _PRVKEY = None
@@ -105,8 +120,8 @@ def _user_config_cleaned(v):
             return (_truncpriv(el) for el in v)
 
 
-def _get_cfg_and_client(network, prvkey, rpc_url):
-    """returns SuiConfig and SyncClient
+def _get_cfg_and_client(network, prvkey, rpc_url) -> Tuple[pysui.SuiConfig, pysui.SyncClient]:
+    """returns pysui.SuiConfig and pysui.SyncClient
 
     Example:
 
@@ -123,12 +138,12 @@ def _get_cfg_and_client(network, prvkey, rpc_url):
     logger().debug(f"user_config: {user_config_clean!r}")
 
     global _CFG
-    _CFG = SuiConfig.user_config(**_USER_CONFIG)
+    _CFG = pysui.SuiConfig.user_config(**_USER_CONFIG)
     logger().info(f"CONFIGURATION: {_CFG.rpc_url}")
 
     global _CLIENT
     logger().info(f"The chain address being used is: {_CFG.active_address}")
-    _CLIENT = SyncClient(_CFG)
+    _CLIENT = pysui.SyncClient(_CFG)
 
     return _CFG, _CLIENT
 
@@ -154,5 +169,3 @@ def _teardown():
     del RPC_URL["localnet"]
 
 
-if __name__ == "__main__":
-    print("\n".join(map(str, init())))
