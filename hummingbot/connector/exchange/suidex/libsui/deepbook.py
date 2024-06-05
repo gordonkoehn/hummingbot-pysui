@@ -32,7 +32,11 @@ quantity = 1_000_000_000
 is_bid = False
 order_id = 136375
 
-########################
+
+
+_DEEPBOOK = None
+
+
 
 
 class DeepbookConnector:
@@ -240,6 +244,14 @@ class DeepbookConnector:
         result = handle_result(txn.inspect_all())
         print(return_value)
         print(result)
+
+
+def current():
+    global _DEEPBOOK
+    if _DEEPBOOK is None:
+        libsui.init()
+        _DEEPBOOK = DeepbookConnector()
+    return _DEEPBOOK
 
 
 if __name__ == "__main__":
