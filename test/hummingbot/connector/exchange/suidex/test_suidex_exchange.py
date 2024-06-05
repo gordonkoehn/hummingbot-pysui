@@ -8,6 +8,7 @@ $ py.test --log-cli-level=DEBUG --log-level=DEBUG -s test/hummingbot/connector/e
 
 import asyncio
 import json
+
 from functools import partial
 from typing import Any, Callable, Dict, List, Optional, Tuple
 from unittest.mock import AsyncMock, MagicMock
@@ -735,9 +736,15 @@ class SuidexExchangeTests(AbstractExchangeConnectorTests.ExchangeConnectorTests)
     @aioresponses()
     def test_chain_connector(self, mock_api):
         chain = self.exchange._data_source._chain_executor
-        if chain.account_cap is None:
-            chain.account_cap = chain.create_account()
-        chain.place_limit_order(price=1.618033, quantity=1337)
+        base_avail, base_locked, quote_avail, quote_locked = chain.account_balance()
+        if base_avail < 10:
+            chain.deposit_base(10)
+            base_avail, base_locked, quote_avail, quote_locked = chain.account_balance()
+            if base_avail < 10:
+                chain.logger().warning(
+                    f"not enough sui available: {base_avail=} ({base_locked=}, {quote_avail=}, {quote_locked=}"
+                )
+        chain.place_limit_order(price=3, quantity=-1337)
         chain.get_level2_book_status_bid_side()
         chain.get_level2_book_status_ask_side()
 
