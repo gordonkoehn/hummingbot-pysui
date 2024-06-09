@@ -33,14 +33,27 @@ class SuidexExchange(ExchangePyBase):
     def __init__(
         self,
         client_config_map: "ClientConfigAdapter",
+        suidex_private_key: Optional[str] = None,
+        suidex_wallet_address: Optional[str] = None,
+        suidex_account_cap: Optional[str] = None,
         trading_pairs: Optional[List[str]] = None,
         trading_required: bool = True,
         net: str = CONSTANTS.NETS[0],
     ):
         self._trading_required = trading_required
         self._trading_pairs = trading_pairs
+        self._private_key = suidex_private_key
+        self._wallet_address = suidex_wallet_address
+        self._account_cap = suidex_account_cap
         self._net = net
-        self._data_source = SuidexDataSource(connector=self, net=self._net, trading_required=trading_required)
+        self._data_source = SuidexDataSource(
+            connector=self,
+            net=self._net,
+            private_key=self.private_key,
+            wallet_address=self.wallet_address,
+            account_cap=self._account_cap,
+            trading_required=self.trading_required,
+        )
         super().__init__(client_config_map=client_config_map)
         self._data_source.configure_throttler(throttler=self._throttler)
         self._forwarders = []

@@ -64,6 +64,8 @@ class SuidexDataSource:
         self,
         connector: "ExchangePyBase",
         private_key: Optional[str] = None,
+        wallet_address: Optional[str] = None,
+        account_cap: Optional[str] = None,
         net: Optional[str] = CONSTANTS.NETS[0],
         trading_required: bool = True,
     ):
@@ -71,7 +73,8 @@ class SuidexDataSource:
         self._net = net
         self._trading_required = trading_required
         self._private_key = private_key
-        self._user_main_address = None
+        self._user_main_address = wallet_address
+        self._account_cap = account_cap
 
         # Load Suidex Runtime Config
         self._runtime_config = RuntimeConfiguration()
