@@ -49,10 +49,10 @@ class SuidexExchange(ExchangePyBase):
         self._data_source = SuidexDataSource(
             connector=self,
             net=self._net,
-            private_key=self.private_key,
-            wallet_address=self.wallet_address,
+            private_key=self._private_key,
+            wallet_address=self._wallet_address,
             account_cap=self._account_cap,
-            trading_required=self.trading_required,
+            trading_required=self._trading_required,
         )
         super().__init__(client_config_map=client_config_map)
         self._data_source.configure_throttler(throttler=self._throttler)
